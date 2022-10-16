@@ -24,15 +24,20 @@ class PlayerWidget(QGraphicsVideoItem):
         view = self.scene().views()[0]
         sceneCoord = self.mapToScene(self.boundingRect().topLeft().toPoint())
         itemPos = view.viewport().mapToGlobal(view.mapFromScene(sceneCoord.toPoint()))
-        boundingWidth = (self.boundingRect().bottomRight().x() - self.boundingRect().bottomLeft().x())
+        boundingWidth = (self.boundingRect().right() - self.boundingRect().left())
         offsetX = self.size().width() - boundingWidth
+        boundingHeight = (self.boundingRect().bottom() - self.boundingRect().top())
+        offsetY = self.size().height() - boundingHeight
         itemPos.setX(int(itemPos.x() - offsetX / 2))
+        itemPos.setY(int(itemPos.y() - offsetY / 2))
         return pos - itemPos
 
     def mapVidToNative(self, pos: QPoint):
-        ratioX = self.size().width() / self.nativeSize().width()
-        ratioY = self.size().height() / self.nativeSize().height()
-        return QPoint(int(ratioX)*pos.x(), int(ratioY)*pos.y())
+        boundingHeight = (self.boundingRect().bottom() - self.boundingRect().top())
+        offsetY = self.size().height() - boundingHeight
+        ratioX = self.nativeSize().width() / self.size().width()
+        ratioY = self.nativeSize().height()/ self.size().height()
+        return QPoint(int(ratioX*pos.x()), int(ratioY*(pos.y() - offsetY / 2)))
 
     def getSelection(self):
         if not (self._state == self._states["SELECTED"]):
@@ -47,7 +52,6 @@ class PlayerWidget(QGraphicsVideoItem):
         self.update()
 
     def mousePressEvent(self, ev: QGraphicsSceneMouseEvent):
-        print(self.mapScreenToVid(QCursor().pos()))
         if ev.button() == Qt.LeftButton:
             self.lastClicked = ev.screenPos()
             self._state = self._states["SELECTING"]
@@ -97,7 +101,7 @@ class EditorWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.selectionStart = 0
-        self.media = "/home/justin/Downloads/deltarune.mp4"
+        self.media = "/home/justin/Downloads/w2l_test_f1.mp4"
 
         player = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         videoItem = PlayerWidget()
@@ -108,6 +112,8 @@ class EditorWindow(QWidget):
         scene.addItem(videoItem)
         player.setVideoOutput(videoItem)
         player.setMedia(QMediaContent(QUrl.fromLocalFile(self.media)))
+        cRect = scene.itemsBoundingRect()
+        scene.setSceneRect(cRect)
         editorTimeline = timeline.TimelineWidget(player)
         vbox = QVBoxLayout()
         vbox.addWidget(graphicsView)
@@ -153,5 +159,8 @@ class EditorWindow(QWidget):
                     self.setDubViewer(dub)
                     self.dubView.addDub(dub)
                 self.videoItem.clearSelection()
+        elif ev.key() == Qt.Key_R:
+            print("sending...")
+            self.dubView.dubs[list(self.dubView.dubs.keys())[0]].render()
 
 

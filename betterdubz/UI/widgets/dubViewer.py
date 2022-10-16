@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel
 from PyQt5.QtCore import Qt
 from betterdubz.objects import dubbing
+import ffmpeg
 
 
 class DubViewer(QWidget):

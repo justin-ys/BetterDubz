@@ -1,5 +1,8 @@
 from PyQt5.QtCore import QPoint, QRect
 import ffmpeg
+from betterdubz.API.w2l_api import W2LAPI
+
+w2l = W2LAPI()
 
 class DubUnit():
 
@@ -9,7 +12,15 @@ class DubUnit():
         self.startTime = startTime
         self.audio = audio
         self.dubbed = dubbed
-        pass
+
+    def render(self):
+        output = "dubs/%s" % (self.original.split("/")[-1]).split('.')[:-1] + '-dubbed.mp4'
+        audio_trimmed = "cache/%s" % self.audio.split("/")[-1]
+        metadata = ffmpeg.probe(self.original)
+        duration = metadata['streams'][0]['duration']
+        ffmpeg.input(self.audio).audio.filter('atrim', duration=duration).output(audio_trimmed).run()
+        w2l.get_dubbed(self.original, audio_trimmed, output)
+        self.dubbed = output
 
     @classmethod
     def fromFile(cls, filename: str, bound: QRect, start: int, end: int):
@@ -23,5 +34,4 @@ class DubUnit():
         return cls(cropped_fname, bound.topLeft(), start)
 
     def to_dict(self):
-        # set to dubbed later
         return {"%s" % self.dubbed: [self.startTime, self.pos]}
