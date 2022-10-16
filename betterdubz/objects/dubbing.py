@@ -20,7 +20,8 @@ class DubUnit():
             .trim(start="%dms" % start, end="%dms" % end)\
             .output(cropped_fname)\
             .run()
-        return cls(cropped_fname, bound.bottomLeft(), start)
+        return cls(cropped_fname, bound.topLeft(), start)
 
-    def to_json(self):
-        pass
+    def to_dict(self):
+        # set to dubbed later
+        return {"%s" % self.dubbed: [self.startTime, self.pos]}

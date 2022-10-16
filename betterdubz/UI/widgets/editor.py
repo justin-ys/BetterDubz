@@ -129,6 +129,7 @@ class EditorWindow(QWidget):
 
     def dubSelected(self, dub: dubbing.DubUnit):
         self.player.setPosition(dub.startTime)
+        self.setDubViewer(dub)
 
     def setDubViewer(self, dub):
         viewer = dubViewer.DubViewer(dub)
