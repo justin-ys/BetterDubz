@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QAction
 from betterdubz.UI.widgets import editor
 
 class MainWindow(QMainWindow):
@@ -10,4 +10,9 @@ class MainWindow(QMainWindow):
         self.layout().setContentsMargins(0, 0, 0, 0)
         editorWindow = editor.EditorWindow()
         self.setCentralWidget(editorWindow)
+        renderAction = QAction("Render", self)
+        renderAction.triggered.connect(editorWindow.renderDubs)
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu("File")
+        fileMenu.addAction(renderAction)
         self.show()

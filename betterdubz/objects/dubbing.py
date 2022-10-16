@@ -18,19 +18,21 @@ class DubUnit():
         audio_trimmed = "cache/%s" % self.audio.split("/")[-1]
         metadata = ffmpeg.probe(self.original)
         duration = metadata['streams'][0]['duration']
-        ffmpeg.input(self.audio).audio.filter('atrim', duration=duration).output(audio_trimmed).run()
-        w2l.get_dubbed(self.original, audio_trimmed, output)
+        ffmpeg.input(self.audio).audio.filter('atrim', duration=duration)\
+          .output(audio_trimmed).run(overwrite_output=True)
+        w2l.get_dubbed(audio_trimmed, self.original, output)
         self.dubbed = output
 
     @classmethod
     def fromFile(cls, filename: str, bound: QRect, start: int, end: int):
         cropped_fname = "cache/cropped-%d-%d-%s-%s.mp4" % \
                         (start, end, (str(bound.bottom()) + str(bound.left())), (str(bound.top()) + str(bound.right())))
-        stream = ffmpeg.input(filename)\
-            .crop(bound.left(), bound.top(), bound.width(), bound.height())\
-            .trim(start="%dms" % start, end="%dms" % end)\
-            .output(cropped_fname)\
-            .run()
+        vstream = ffmpeg.input(filename).video
+        astream = ffmpeg.input(filename).audio
+        nvstream = vstream.crop(bound.left(), bound.top(), bound.width(), bound.height())\
+            .trim(start="%dms" % start, end="%dms" % end).filter('fps', fps=24, round='up')
+        nastream = astream.filter("atrim", start="%dms" % start, end="%dms" % end).filter('asetpts', 'PTS-STARTPTS')
+        ffmpeg.output(nvstream, nastream, cropped_fname).run()
         return cls(cropped_fname, bound.topLeft(), start)
 
     def to_dict(self):

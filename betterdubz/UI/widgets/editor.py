@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QGraphicsSceneMouseEvent, \
-    QStyleOptionGraphicsItem, QGraphicsItem, QListWidget, QListWidgetItem, QHBoxLayout
+    QStyleOptionGraphicsItem, QGraphicsItem, QListWidget, QListWidgetItem, QHBoxLayout, QMessageBox
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QGraphicsVideoItem
 from PyQt5.QtCore import QUrl, QSizeF, Qt, QPoint, QRect, pyqtSignal, QEvent
-from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPainter, QCursor
+from PyQt5.QtGui import QKeyEvent, QPainter, QCursor, QPen, QColor
+import ffmpeg
 from betterdubz.UI.widgets import timeline, dubViewer
 from betterdubz.objects import dubbing
 
@@ -76,6 +77,7 @@ class PlayerWidget(QGraphicsVideoItem):
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget = ...):
         super().paint(painter, option, widget)
+        painter.setPen(QPen(QColor("yellow")))
         if self._state == self._states["SELECTING"]:
             cpos = QCursor.pos()
             painter.drawRect(QRect(self.mapScreenToVid(self.lastClicked), self.mapScreenToVid(cpos)))
@@ -139,11 +141,30 @@ class EditorWindow(QWidget):
 
     def setDubViewer(self, dub):
         viewer = dubViewer.DubViewer(dub)
-        self.layout().replaceWidget(self.currentDubViewer, viewer)
+        self.layout().removeWidget(self.currentDubViewer)
+        self.currentDubViewer.deleteLater()
+        self.currentDubViewer = None
         self.currentDubViewer = viewer
+        self.layout().addWidget(self.currentDubViewer)
 
     def beginSelection(self):
         self.selectionStart = self.player.position()
+
+    def renderDubs(self):
+        mbox = QMessageBox()
+        mbox.setText("Rendering, please wait...")
+        mbox.setIcon(QMessageBox.Information)
+        #mbox.exec()
+        dubs = [self.dubView.dubs[dub] for dub in self.dubView.dubs.keys()]
+        for dub in dubs:
+            if dub.audio:
+                dub.render()
+        vstream = ffmpeg.input(self.media)
+        for dub in dubs:
+            dubstream = ffmpeg.input(dub.dubbed)
+            stream = ffmpeg.overlay(vstream, dubstream, x=dub.pos.x(), y=dub.pos.y(), eof_action='pass')
+        vstream.output("dubbed.mp4").run()
+
 
     def keyPressEvent(self, ev: QKeyEvent):
         if ev.key() == Qt.Key_Space:
@@ -159,8 +180,5 @@ class EditorWindow(QWidget):
                     self.setDubViewer(dub)
                     self.dubView.addDub(dub)
                 self.videoItem.clearSelection()
-        elif ev.key() == Qt.Key_R:
-            print("sending...")
-            self.dubView.dubs[list(self.dubView.dubs.keys())[0]].render()
 
 

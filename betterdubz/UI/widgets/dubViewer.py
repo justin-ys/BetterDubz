@@ -10,7 +10,10 @@ class DubViewer(QWidget):
         self.dub = dub
         self.label = QLabel()
         self.label.setAlignment(Qt.AlignHCenter)
-        self.label.setText("No audio provided")
+        if dub.audio:
+            self.label.setText(dub.audio)
+        else:
+            self.label.setText("No audio provided")
         button = QPushButton()
         button.setText("click here...")
         button.clicked.connect(self.uploadAudio)
